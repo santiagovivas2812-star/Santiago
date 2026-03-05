@@ -275,9 +275,16 @@ static void timer1_program(uint16_t ticksA, uint16_t ticksB)
 
     /*
      * OCR1B = ticksA + ticksB (fin de dwell).
-     * Protección contra overflow: ambos son uint16_t, suma puede alcanzar
-     * hasta 65534 + 10000 = 75534 que no cabe en uint16_t.
-     * Si la suma excede TIMER1_OCR_MAX, se recorta.
+     *
+     * Análisis de valores máximos reales desde el llamador:
+     *   ticksA_max = TIMER1_MAX_DELAY_US × TIMER1_TICKS_PER_US
+     *              = 32767 µs × 2 ticks/µs = 65534 ticks
+     *   ticksB_max = DWELL_MAX_US × TIMER1_TICKS_PER_US
+     *              = 5000 µs × 2 ticks/µs = 10000 ticks
+     *   suma_max   = 65534 + 10000 = 75534 > TIMER1_OCR_MAX (65535)
+     *
+     * La suma se calcula en uint32_t y se recorta a TIMER1_OCR_MAX si
+     * excede el rango del registro OCR1B de 16 bits.
      */
     uint32_t ocr1b_val = (uint32_t)ticksA + (uint32_t)ticksB;
     if (ocr1b_val > (uint32_t)TIMER1_OCR_MAX) {
